@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import confetti from 'canvas-confetti';
 import styles from './NoseGame.module.css';
-import { playClickSound, playExplosionSound, playInhaleSound } from '../utils/sound';
+import { playClickSound, playExplosionSound, playInhaleSound, playSquishSound } from '../utils/sound';
 
 type GameState = 'SETUP' | 'PLAYING' | 'GAME_OVER';
 
@@ -22,6 +22,8 @@ export default function NoseGame() {
     const [isScrunching, setIsScrunching] = useState(false);
     const [isPokeAnim, setIsPokeAnim] = useState(false);
     const [isSneezeBuildup, setIsSneezeBuildup] = useState(false); // New state for 'Ah... ah...'
+    const [isShaking, setIsShaking] = useState(false);
+    const [isSnotSwing, setIsSnotSwing] = useState(false);
 
     useEffect(() => {
         // Initial theme setup logic if needed, usually managed locally
@@ -89,13 +91,23 @@ export default function NoseGame() {
         // Visual reactions
         setIsScrunching(true);
         setIsPokeAnim(true);
+        setIsSnotSwing(true);
+        setIsShaking(true);
+
+        // Reset animation triggers
         setTimeout(() => setIsScrunching(false), 150);
         setTimeout(() => setIsPokeAnim(false), 200);
+        setTimeout(() => setIsSnotSwing(false), 1000);
+        setTimeout(() => setIsShaking(false), 200);
 
         // Snot Splatter
         triggerSnotSplatter(e.clientX, e.clientY);
 
         const newCount = clickCount + 1;
+        // Calculate tension for sound
+        const currentTension = Math.min(newCount / 20, 1);
+        playSquishSound(currentTension);
+
         setClickCount(newCount);
 
         if (newCount >= popLimit) {
@@ -183,7 +195,7 @@ export default function NoseGame() {
     const snotOpacity = clickCount > 1 ? 1 : 0;
 
     return (
-        <div className={`${styles.container} glass-panel relative`}>
+        <div className={`${styles.container} glass-panel relative ${isShaking ? styles.containerShake : ''}`}>
 
             {/* Theme Toggle code remains same... */}
             <button
@@ -291,7 +303,7 @@ export default function NoseGame() {
 
                         {/* The Snot - Grows and throbs */}
                         <div
-                            className={styles.snot}
+                            className={`${styles.snot} ${isSnotSwing ? styles.snotSwing : ''}`}
                             style={{
                                 opacity: snotOpacity,
                                 transform: `scaleY(${Math.max(0.1, snotScaleY)})`,

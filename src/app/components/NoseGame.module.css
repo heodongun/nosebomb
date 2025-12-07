@@ -101,20 +101,21 @@
 }
 
 .featherPoke {
-    animation: poke 0.2s ease-in-out;
+    animation: poke 0.15s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 @keyframes poke {
     0% {
-        transform: rotate(0deg) translateX(0);
+        transform: translate(-0%, -100%) rotate(-20deg);
     }
 
     50% {
-        transform: rotate(-15deg) translateX(-10px);
+        transform: translate(10%, -80%) rotate(10deg);
     }
 
+    /* Poke downward/inward */
     100% {
-        transform: rotate(0deg) translateX(0);
+        transform: translate(-0%, -100%) rotate(-20deg);
     }
 }
 
@@ -128,15 +129,15 @@
     }
 
     25% {
-        transform: translate(-2px, 2px);
+        transform: translate(2px, 2px) rotate(1deg);
     }
 
     50% {
-        transform: translate(2px, -2px);
+        transform: translate(-2px, 0px) rotate(-1deg);
     }
 
     75% {
-        transform: translate(-2px, -2px);
+        transform: translate(1px, -2px);
     }
 
     100% {
@@ -154,6 +155,64 @@
     z-index: 5;
     pointer-events: none;
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.snotSwing {
+    animation: snotDangle 1s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+}
+
+@keyframes snotDangle {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    20% {
+        transform: rotate(15deg) scaleY(1.1);
+    }
+
+    40% {
+        transform: rotate(-10deg) scaleY(1.05);
+    }
+
+    60% {
+        transform: rotate(5deg) scaleY(1.02);
+    }
+
+    80% {
+        transform: rotate(-2deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+.containerShake {
+    animation: shakeContainer 0.2s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shakeContainer {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
 }
 
 .noseClicked {

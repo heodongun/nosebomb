@@ -1,13 +1,38 @@
 export const playClickSound = () => {
-    // Silent or very subtle tickle sound possibly?
-    // Keeping it empty as per previous request for silence, or maybe a very soft 'swish'
+    // Kept empty as per previous request to remove generic clicks
+};
+
+export const playSquishSound = (tension: number) => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const filter = audioContext.createBiquadFilter();
+
+    // Wet squish is a short, pitch-dropping sine/triangle with filter movement
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(150 + (tension * 100), audioContext.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.1);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1000, audioContext.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.15);
+
+    gain.gain.setValueAtTime(0.1 + (tension * 0.2), audioContext.currentTime); // Louder as tension up
+    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioContext.destination);
+
+    osc.start();
+    osc.stop(audioContext.currentTime + 0.15);
 };
 
 export const playExplosionSound = () => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-    // Create noise buffer
-    const bufferSize = audioContext.sampleRate * 2; // 2 seconds
+    const bufferSize = audioContext.sampleRate * 2;
     const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
     const data = buffer.getChannelData(0);
 
@@ -39,7 +64,6 @@ export const playInhaleSound = () => {
     const gainNode = audioContext.createGain();
 
     oscillator.type = 'sine';
-    // Slide up pitch to simulate inhale
     oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
     oscillator.frequency.linearRampToValueAtTime(600, audioContext.currentTime + 1.5);
 
