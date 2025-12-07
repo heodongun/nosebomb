@@ -145,16 +145,20 @@
     }
 }
 
-.snot {
+.snotContainer {
     position: absolute;
     /* Behind the nose as requested */
-    top: 60%;
+    top: 45%;
     left: 50%;
     transform-origin: top center;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 5;
-    /* Lower than nose (10) */
     pointer-events: none;
+}
+
+/* Inner element handles the growing length */
+.snotBody {
+    transform-origin: top center;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
 }
 

@@ -301,21 +301,25 @@ export default function NoseGame() {
                             />
                         </div>
 
-                        {/* The Snot - Grows and throbs */}
+                        {/* The Snot */}
                         <div
-                            className={`${styles.snot} ${isSnotSwing ? styles.snotSwing : ''}`}
-                            style={{
-                                opacity: snotOpacity,
-                                transform: `scaleY(${Math.max(0.1, snotScaleY)})`,
-                            }}
+                            className={`${styles.snotContainer} ${isSnotSwing ? styles.snotSwing : ''}`}
+                            style={{ opacity: snotOpacity }}
                         >
-                            <Image
-                                src="/snot.png"
-                                alt="Snot"
-                                width={60}
-                                height={100}
-                                style={{ objectFit: 'contain' }}
-                            />
+                            <div
+                                className={styles.snotBody}
+                                style={{
+                                    transform: `scaleY(${Math.max(0.1, snotScaleY)})`,
+                                }}
+                            >
+                                <Image
+                                    src="/snot.png"
+                                    alt="Snot"
+                                    width={60}
+                                    height={100}
+                                    style={{ objectFit: 'contain' }}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -332,43 +336,45 @@ export default function NoseGame() {
             )}
 
             {/* GAME OVER STAGE - CODE REMAINS SAME */}
-            {gameState === 'GAME_OVER' && (
-                <div className={styles.gameOverContainer}>
+            {
+                gameState === 'GAME_OVER' && (
+                    <div className={styles.gameOverContainer}>
 
-                    <div style={{ textAlign: 'center', position: 'relative' }}>
-                        {showExplosion && (
-                            <div className="pop-anim" style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
-                                <Image
-                                    src="/explosion.png"
-                                    alt="Explosion"
-                                    width={300}
-                                    height={300}
-                                    style={{ objectFit: 'contain' }}
-                                />
+                        <div style={{ textAlign: 'center', position: 'relative' }}>
+                            {showExplosion && (
+                                <div className="pop-anim" style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+                                    <Image
+                                        src="/explosion.png"
+                                        alt="Explosion"
+                                        width={300}
+                                        height={300}
+                                        style={{ objectFit: 'contain' }}
+                                    />
+                                </div>
+                            )}
+
+                            <h2 className={`${styles.boomText} glow-text`}>ACHOOO!</h2>
+                            <div className={styles.loserText}>
+                                <span style={{ color: 'var(--secondary)', fontWeight: 'bold' }}>{players[currentPlayerIndex]}</span> LOST!
                             </div>
-                        )}
-
-                        <h2 className={`${styles.boomText} glow-text`}>ACHOOO!</h2>
-                        <div className={styles.loserText}>
-                            <span style={{ color: 'var(--secondary)', fontWeight: 'bold' }}>{players[currentPlayerIndex]}</span> LOST!
+                            <p style={{ opacity: 0.5, marginTop: '0.5rem' }}>It took {clickCount} tickles.</p>
                         </div>
-                        <p style={{ opacity: 0.5, marginTop: '0.5rem' }}>It took {clickCount} tickles.</p>
-                    </div>
 
-                    <div className={styles.actionButtons}>
-                        <button className="btn" style={{ flex: 1 }} onClick={resetGame}>New Players</button>
-                        <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => {
-                            setClickCount(0);
-                            const limit = Math.floor(Math.random() * 20) + 5;
-                            setPopLimit(limit);
-                            setCurrentPlayerIndex(0);
-                            setGameState('PLAYING');
-                            setShowExplosion(false);
-                        }}>Replay Same Players</button>
+                        <div className={styles.actionButtons}>
+                            <button className="btn" style={{ flex: 1 }} onClick={resetGame}>New Players</button>
+                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => {
+                                setClickCount(0);
+                                const limit = Math.floor(Math.random() * 20) + 5;
+                                setPopLimit(limit);
+                                setCurrentPlayerIndex(0);
+                                setGameState('PLAYING');
+                                setShowExplosion(false);
+                            }}>Replay Same Players</button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </div>
+        </div >
     );
 }
