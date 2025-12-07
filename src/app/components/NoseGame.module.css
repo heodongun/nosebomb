@@ -73,14 +73,75 @@
     align-items: center;
     height: 300px;
     width: 300px;
+    cursor: none;
+    /* Hide default cursor to use custom feather */
 }
 
 .nose {
-    cursor: pointer;
-    transition: transform 0.1s ease;
+    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
     position: relative;
     z-index: 10;
+}
+
+.noseScrunch {
+    transform: scale(0.95) rotate(2deg) !important;
+    filter: brightness(1.1) !important;
+}
+
+.featherCursor {
+    position: absolute;
+    width: 100px;
+    /* Adjust size as needed */
+    pointer-events: none;
+    z-index: 50;
+    transform-origin: bottom right;
+    transition: transform 0.05s linear;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
+}
+
+.featherPoke {
+    animation: poke 0.2s ease-in-out;
+}
+
+@keyframes poke {
+    0% {
+        transform: rotate(0deg) translateX(0);
+    }
+
+    50% {
+        transform: rotate(-15deg) translateX(-10px);
+    }
+
+    100% {
+        transform: rotate(0deg) translateX(0);
+    }
+}
+
+.nosePreSneeze {
+    animation: vibrated 0.1s infinite;
+}
+
+@keyframes vibrated {
+    0% {
+        transform: translate(0);
+    }
+
+    25% {
+        transform: translate(-2px, 2px);
+    }
+
+    50% {
+        transform: translate(2px, -2px);
+    }
+
+    75% {
+        transform: translate(-2px, -2px);
+    }
+
+    100% {
+        transform: translate(0);
+    }
 }
 
 .snot {

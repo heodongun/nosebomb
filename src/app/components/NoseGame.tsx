@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import confetti from 'canvas-confetti';
 import styles from './NoseGame.module.css';
-import { playClickSound, playExplosionSound } from '../utils/sound';
+import { playClickSound, playExplosionSound, playInhaleSound } from '../utils/sound';
 
 type GameState = 'SETUP' | 'PLAYING' | 'GAME_OVER';
 
@@ -18,6 +18,10 @@ export default function NoseGame() {
     const [isAnimating, setIsAnimating] = useState(false);
     const [showExplosion, setShowExplosion] = useState(false);
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [isScrunching, setIsScrunching] = useState(false);
+    const [isPokeAnim, setIsPokeAnim] = useState(false);
+    const [isSneezeBuildup, setIsSneezeBuildup] = useState(false); // New state for 'Ah... ah...'
 
     useEffect(() => {
         // Initial theme setup logic if needed, usually managed locally
@@ -69,32 +73,48 @@ export default function NoseGame() {
         playClickSound();
     };
 
+    const handleMouseMove = (e: React.MouseEvent) => {
+        // Update custom cursor position relative to the container
+        // We'll use absolute positioning within the relative container
+        const rect = e.currentTarget.getBoundingClientRect();
+        setMousePos({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        });
+    };
+
     const handleHit = (e: React.MouseEvent) => {
-        if (gameState !== 'PLAYING' || isAnimating) return;
+        if (gameState !== 'PLAYING' || isSneezeBuildup) return;
 
-        setIsAnimating(true);
+        // Visual reactions
+        setIsScrunching(true);
+        setIsPokeAnim(true);
+        setTimeout(() => setIsScrunching(false), 150);
+        setTimeout(() => setIsPokeAnim(false), 200);
 
-        // Trigger Snot Splatter on click
+        // Snot Splatter
         triggerSnotSplatter(e.clientX, e.clientY);
 
-        // Calculate tension for next render
-        // We won't use exact popLimit to avoid giving it away completely, 
-        // but we'll scale effect based on clicks roughly.
+        const newCount = clickCount + 1;
+        setClickCount(newCount);
 
-        setTimeout(() => {
-            const newCount = clickCount + 1;
-            setClickCount(newCount);
-            setIsAnimating(false);
+        if (newCount >= popLimit) {
+            // PRE-SNEEZE SUSPENSE START
+            setIsSneezeBuildup(true);
+            playInhaleSound();
 
-            if (newCount >= popLimit) {
+            // Delay explosion by ~1.5s for the "Ah... ah..."
+            setTimeout(() => {
                 setShowExplosion(true);
                 setGameState('GAME_OVER');
+                setIsSneezeBuildup(false);
                 playExplosionSound();
                 triggerConfetti();
-            } else {
-                setCurrentPlayerIndex((prev) => (prev + 1) % players.length);
-            }
-        }, 150); // Faster bounce back for snappier feel
+            }, 1500);
+
+        } else {
+            setCurrentPlayerIndex((prev) => (prev + 1) % players.length);
+        }
     };
 
     const triggerSnotSplatter = (x: number, y: number) => {
@@ -108,7 +128,7 @@ export default function NoseGame() {
             startVelocity: 20,
             origin: { x: xRatio, y: yRatio },
             colors: ['#aaff00', '#00ff55', '#ccff33'], // Snot colors
-            scales: [0.5, 0.8],
+            scalar: 0.8,
             gravity: 2,
             drift: 0,
             ticks: 50, // Disappear fast
@@ -150,9 +170,9 @@ export default function NoseGame() {
     // Dynamic styles based on tension
     const noseStyle = {
         filter: `
-      brightness(${1 + tension * 0.2}) 
-      sepia(${tension * 0.5}) 
-      hue-rotate(-${tension * 30}deg) 
+      brightness(${1 + tension * 0.2})
+      sepia(${tension * 0.5})
+      hue-rotate(-${tension * 30}deg)
       saturate(${1 + tension * 2})
       drop-shadow(0 0 ${tension * 20}px rgba(255, 0, 0, ${tension * 0.5}))
     `,
@@ -175,7 +195,7 @@ export default function NoseGame() {
             </button>
 
             <h1 className={`${styles.header} glow-text`}>
-                POP THE NOSE
+                MAKE IT SNEEZE
             </h1>
 
             {/* SETUP STAGE - CODE REMAINS SAME */}
@@ -228,12 +248,36 @@ export default function NoseGame() {
                         <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--secondary)' }}>{players[currentPlayerIndex]}</div>
                     </div>
 
-                    <div className={styles.noseWrapper}>
+                    {/* NOSE WRAPPER: Now tracks mouse for feather */}
+                    <div
+                        className={styles.noseWrapper}
+                        onMouseMove={handleMouseMove}
+                        onClick={handleHit}
+                    >
+                        {/* Custom Feather Cursor Element */}
+                        <div
+                            className={`${styles.featherCursor} ${isPokeAnim ? styles.featherPoke : ''}`}
+                            style={{
+                                left: mousePos.x,
+                                top: mousePos.y,
+                                // Offset so the tip of feather is at the cursor
+                                transform: 'translate(-0%, -100%) rotate(-20deg)',
+                            }}
+                        >
+                            <Image
+                                src="/feather.png"
+                                alt="Feature"
+                                width={100}
+                                height={100}
+                                style={{ objectFit: 'contain' }}
+                                priority
+                            />
+                        </div>
+
                         {/* The Nose - Dynamic Tension Styles */}
                         <div
-                            className={`${styles.nose} ${isAnimating ? 'shake' : ''}`}
+                            className={`${styles.nose} ${isScrunching ? styles.noseScrunch : ''} ${isSneezeBuildup ? styles.nosePreSneeze : ''}`}
                             style={noseStyle}
-                            onClick={handleHit}
                         >
                             <Image
                                 src="/nose.png"
@@ -264,8 +308,8 @@ export default function NoseGame() {
                     </div>
 
                     <div style={{ textAlign: 'center', opacity: 0.7 }}>
-                        <p className={styles.tensionText} style={{ opacity: Math.max(0.3, tension) }}>
-                            {tension > 0.8 ? "IT'S ABOUT TO BLOW!" : "Keep poking..."}
+                        <p className={styles.tensionText} style={{ opacity: Math.max(0.3, tension), fontSize: isSneezeBuildup ? '2rem' : '1rem', fontWeight: isSneezeBuildup ? 'bold' : 'normal', color: isSneezeBuildup ? 'var(--primary)' : 'inherit' }}>
+                            {isSneezeBuildup ? "AH... AH... AH...!" : (tension > 0.8 ? "It's trembling..." : "Tickle the nose with the feather...")}
                         </p>
                     </div>
 
@@ -292,11 +336,11 @@ export default function NoseGame() {
                             </div>
                         )}
 
-                        <h2 className={`${styles.boomText} glow-text`}>BOOM!</h2>
+                        <h2 className={`${styles.boomText} glow-text`}>ACHOOO!</h2>
                         <div className={styles.loserText}>
                             <span style={{ color: 'var(--secondary)', fontWeight: 'bold' }}>{players[currentPlayerIndex]}</span> LOST!
                         </div>
-                        <p style={{ opacity: 0.5, marginTop: '0.5rem' }}>It took {clickCount} hits.</p>
+                        <p style={{ opacity: 0.5, marginTop: '0.5rem' }}>It took {clickCount} tickles.</p>
                     </div>
 
                     <div className={styles.actionButtons}>
