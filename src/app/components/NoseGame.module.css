@@ -147,12 +147,13 @@
 
 .snot {
     position: absolute;
-    /* Adjust these to align with the nostril of nose.png */
-    top: 55%;
-    left: 60%;
+    /* Behind the nose as requested */
+    top: 60%;
+    left: 50%;
     transform-origin: top center;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 5;
+    /* Lower than nose (10) */
     pointer-events: none;
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
 }
