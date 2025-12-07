@@ -29,9 +29,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 10px 20px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--input-bg);
     border-radius: 12px;
     backdrop-filter: blur(5px);
+    border: 1px solid var(--glass-border);
 }
 
 .removeBtn {
@@ -57,12 +58,12 @@
 }
 
 .turnIndicator {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--input-bg);
     padding: 1rem;
     border-radius: 12px;
     width: 100%;
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
 }
 
 .noseWrapper {
@@ -78,10 +79,40 @@
     cursor: pointer;
     transition: transform 0.1s ease;
     filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
+    position: relative;
+    z-index: 10;
+}
+
+.snot {
+    position: absolute;
+    /* Adjust these to align with the nostril of nose.png */
+    top: 55%;
+    left: 60%;
+    transform-origin: top center;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 5;
+    pointer-events: none;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
 }
 
 .noseClicked {
     filter: brightness(1.2) sepia(0.5) hue-rotate(-50deg) saturate(2) drop-shadow(0 10px 30px rgba(255, 0, 0, 0.5));
+}
+
+.themeToggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.themeToggle:hover {
+    opacity: 1;
 }
 
 .clickCounter {
