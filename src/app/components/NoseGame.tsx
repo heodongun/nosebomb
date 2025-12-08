@@ -4,13 +4,14 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import confetti from 'canvas-confetti';
 import styles from './NoseGame.module.css';
-import { playClickSound, playExplosionSound, playInhaleSound, playSquishSound } from '../utils/sound';
+import { playClickSound, playExplosionSound, playInhaleSound, playSquishSound, playBlockSound } from '../utils/sound';
 
 type GameState = 'SETUP' | 'PLAYING' | 'GAME_OVER';
 
 export default function NoseGame() {
     const [gameState, setGameState] = useState<GameState>('SETUP');
     const [players, setPlayers] = useState<string[]>([]);
+    const [introVideo, setIntroVideo] = useState(true); // Optional: if we had a video
     const [playerNameInput, setPlayerNameInput] = useState('');
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [clickCount, setClickCount] = useState(0);
@@ -21,9 +22,36 @@ export default function NoseGame() {
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [isScrunching, setIsScrunching] = useState(false);
     const [isPokeAnim, setIsPokeAnim] = useState(false);
-    const [isSneezeBuildup, setIsSneezeBuildup] = useState(false); // New state for 'Ah... ah...'
+    const [isSneezeBuildup, setIsSneezeBuildup] = useState(false);
     const [isShaking, setIsShaking] = useState(false);
     const [isSnotSwing, setIsSnotSwing] = useState(false);
+    const [showSaved, setShowSaved] = useState(false); // Used to show Block Success state
+    const [showSpacePrompt, setShowSpacePrompt] = useState(false);
+    const [sneezeDeadline, setSneezeDeadline] = useState(0); // For difficulty tracking
+
+    const sneezeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        const handleKey = (e: KeyboardEvent) => {
+            if (gameState !== 'PLAYING') return;
+
+            // SPACEBAR BLOCKING LOGIC
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (isSneezeBuildup) {
+                    handleSuccessfulBlock();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
+    }, [gameState, isSneezeBuildup]);
+
+    useEffect(() => {
+        return () => {
+            if (sneezeTimeoutRef.current) clearTimeout(sneezeTimeoutRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         // Initial theme setup logic if needed, usually managed locally
@@ -85,8 +113,22 @@ export default function NoseGame() {
         });
     };
 
+    const handleSuccessfulBlock = () => {
+        if (sneezeTimeoutRef.current) clearTimeout(sneezeTimeoutRef.current);
+        setIsSneezeBuildup(false);
+        setShowSpacePrompt(false);
+        setShowSaved(true);
+        playBlockSound();
+
+        // Reset tension and pass turn
+        setClickCount(0);
+        setTimeout(() => setShowSaved(false), 2000);
+        setCurrentPlayerIndex((prev) => (prev + 1) % players.length);
+    };
+
     const handleHit = (e: React.MouseEvent) => {
-        if (gameState !== 'PLAYING' || isSneezeBuildup) return;
+        if (gameState !== 'PLAYING') return;
+        if (isSneezeBuildup) return; // Ignore clicks during buildup, wait for Space
 
         // Visual reactions
         setIsScrunching(true);
@@ -111,18 +153,26 @@ export default function NoseGame() {
         setClickCount(newCount);
 
         if (newCount >= popLimit) {
+            // DIFFICULTY LOGIC
+            // 20% chance of a "Fake Sneeze" (handled by resetting without explosion) - maybe later feature
+            // Random duration between 400ms (Very Hard) and 1200ms (Easy)
+            const randomDuration = Math.max(400, Math.random() * 1200);
+
             // PRE-SNEEZE SUSPENSE START
             setIsSneezeBuildup(true);
-            playInhaleSound();
+            setShowSpacePrompt(true); // SHOW QTE PROMPT
+            playInhaleSound(randomDuration);
+            setSneezeDeadline(Date.now() + randomDuration);
 
-            // Delay explosion by ~1.5s for the "Ah... ah..."
-            setTimeout(() => {
+            // Delay explosion
+            sneezeTimeoutRef.current = setTimeout(() => {
                 setShowExplosion(true);
                 setGameState('GAME_OVER');
                 setIsSneezeBuildup(false);
+                setShowSpacePrompt(false);
                 playExplosionSound();
                 triggerConfetti();
-            }, 1500);
+            }, randomDuration);
 
         } else {
             setCurrentPlayerIndex((prev) => (prev + 1) % players.length);
@@ -214,7 +264,14 @@ export default function NoseGame() {
             {gameState === 'SETUP' && (
                 <div className={styles.setupContainer}>
                     <div className="text-center" style={{ fontSize: '1.2rem', marginBottom: '1rem', opacity: 0.8 }}>
-                        Add players to the bet!
+                        내기에 참여할 플레이어를 추가하세요!
+                    </div>
+
+                    <div className={styles.instructionsBox}>
+                        <h3>🤧 게임 방법</h3>
+                        <p>1. 마우스 클릭으로 코를 간지럽히세요.</p>
+                        <p>2. 코가 <b>"에... 에취..."</b> 할 때!</p>
+                        <p>3. <b>[스페이스바]</b>를 연타해서 휴지로 막으세요!</p>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
@@ -253,42 +310,44 @@ export default function NoseGame() {
             )}
 
             {gameState === 'PLAYING' && (
-                <div className={styles.gameContainer}>
+                <div
+                    className={styles.gameContainer}
+                    onMouseMove={handleMouseMove}
+                    style={{ position: 'relative', cursor: 'none' }} // Hide default cursor here
+                >
+                    {/* CUSTOM CURSOR - Always Feather unless blocking logic needed visually, but simplifying for QTE */}
+                    <div
+                        className={`${styles.featherCursor} ${isPokeAnim ? styles.featherPoke : ''}`}
+                        style={{
+                            left: mousePos.x,
+                            top: mousePos.y,
+                            transform: 'translate(-0%, -100%) rotate(-20deg)',
+                        }}
+                    >
+                        <Image
+                            src="/feather.png"
+                            alt="Feather"
+                            width={100}
+                            height={100}
+                            style={{ objectFit: 'contain' }}
+                            priority
+                        />
+                    </div>
 
                     <div className={styles.turnIndicator}>
-                        <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>CURRENT TURN</div>
+                        <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>현재 차례</div>
                         <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--secondary)' }}>{players[currentPlayerIndex]}</div>
                     </div>
 
-                    {/* NOSE WRAPPER: Now tracks mouse for feather */}
+                    {/* NOSE WRAPPER */}
                     <div
                         className={styles.noseWrapper}
-                        onMouseMove={handleMouseMove}
                         onClick={handleHit}
                     >
-                        {/* Custom Feather Cursor Element */}
-                        <div
-                            className={`${styles.featherCursor} ${isPokeAnim ? styles.featherPoke : ''}`}
-                            style={{
-                                left: mousePos.x,
-                                top: mousePos.y,
-                                // Offset so the tip of feather is at the cursor
-                                transform: 'translate(-0%, -100%) rotate(-20deg)',
-                            }}
-                        >
-                            <Image
-                                src="/feather.png"
-                                alt="Feature"
-                                width={100}
-                                height={100}
-                                style={{ objectFit: 'contain' }}
-                                priority
-                            />
-                        </div>
 
                         {/* The Nose - Dynamic Tension Styles */}
                         <div
-                            className={`${styles.nose} ${isScrunching ? styles.noseScrunch : ''} ${isSneezeBuildup ? styles.nosePreSneeze : ''}`}
+                            className={`${styles.nose} ${isScrunching ? styles.noseScrunch : ''} ${isSneezeBuildup ? styles.nosePreSneeze : ''} ${showSaved ? styles.blockedNose : ''}`}
                             style={noseStyle}
                         >
                             <Image
@@ -299,6 +358,14 @@ export default function NoseGame() {
                                 className="object-contain"
                                 priority
                             />
+                            {showSaved && (
+                                <>
+                                    <div className={styles.savedText}>휴지로 막았다!</div>
+                                    <div className={styles.blockVisual}>
+                                        <Image src="/tissue.png" alt="Blocked" width={200} height={200} />
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* The Snot */}
@@ -325,12 +392,18 @@ export default function NoseGame() {
 
                     <div style={{ textAlign: 'center', opacity: 0.7 }}>
                         <p className={styles.tensionText} style={{ opacity: Math.max(0.3, tension), fontSize: isSneezeBuildup ? '2rem' : '1rem', fontWeight: isSneezeBuildup ? 'bold' : 'normal', color: isSneezeBuildup ? 'var(--primary)' : 'inherit' }}>
-                            {isSneezeBuildup ? "AH... AH... AH...!" : (tension > 0.8 ? "It's trembling..." : "Tickle the nose with the feather...")}
+                            {isSneezeBuildup ? "에... 에... 에취...!" : (tension > 0.8 ? "코가 떨리고 있어요..." : "깃털로 코를 간지럽히세요...")}
                         </p>
                     </div>
 
+                    {showSpacePrompt && (
+                        <div className={styles.spacePrompt}>
+                            스페이스바를 누르세요!
+                        </div>
+                    )}
+
                     <button className={`btn btn-danger ${styles.fullWidth}`} onClick={() => setGameState('SETUP')}>
-                        Abort Game
+                        게임 중단
                     </button>
                 </div>
             )}
@@ -353,15 +426,15 @@ export default function NoseGame() {
                                 </div>
                             )}
 
-                            <h2 className={`${styles.boomText} glow-text`}>ACHOOO!</h2>
+                            <h2 className={`${styles.boomText} glow-text`}>에취!!!</h2>
                             <div className={styles.loserText}>
-                                <span style={{ color: 'var(--secondary)', fontWeight: 'bold' }}>{players[currentPlayerIndex]}</span> LOST!
+                                <span style={{ color: 'var(--secondary)', fontWeight: 'bold' }}>{players[currentPlayerIndex]}</span> 님이 졌습니다!
                             </div>
-                            <p style={{ opacity: 0.5, marginTop: '0.5rem' }}>It took {clickCount} tickles.</p>
+                            <p style={{ opacity: 0.5, marginTop: '0.5rem' }}>{clickCount}번 간지럽혔네요.</p>
                         </div>
 
                         <div className={styles.actionButtons}>
-                            <button className="btn" style={{ flex: 1 }} onClick={resetGame}>New Players</button>
+                            <button className="btn" style={{ flex: 1 }} onClick={resetGame}>새 게임</button>
                             <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => {
                                 setClickCount(0);
                                 const limit = Math.floor(Math.random() * 20) + 5;
@@ -369,7 +442,7 @@ export default function NoseGame() {
                                 setCurrentPlayerIndex(0);
                                 setGameState('PLAYING');
                                 setShowExplosion(false);
-                            }}>Replay Same Players</button>
+                            }}>다시 하기</button>
                         </div>
                     </div>
                 )
