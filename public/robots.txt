@@ -1,0 +1,13 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://nosebomb.pages.dev/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 1
+
+# Disallow specific paths (if any)
+# Disallow: /api/
+# Disallow: /admin/
