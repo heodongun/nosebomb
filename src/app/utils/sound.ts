@@ -58,22 +58,55 @@ export const playExplosionSound = () => {
     noise.start();
 };
 
-export const playInhaleSound = () => {
+export const playInhaleSound = (durationMs: number) => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
+    const durationSec = durationMs / 1000;
+
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-    oscillator.frequency.linearRampToValueAtTime(600, audioContext.currentTime + 1.5);
+    oscillator.frequency.linearRampToValueAtTime(800, audioContext.currentTime + durationSec);
 
     gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 1.2);
-    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1.5);
+    gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + durationSec * 0.8);
+    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + durationSec);
 
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
 
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + 1.5);
+    oscillator.stop(audioContext.currentTime + durationSec);
+};
+
+export const playBlockSound = () => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    // Create soft thud using noise burst and lowpass
+    const bufferSize = audioContext.sampleRate * 0.5;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.5;
+    }
+
+    const noise = audioContext.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(500, audioContext.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.3);
+
+    const gain = audioContext.createGain();
+    gain.gain.setValueAtTime(0.8, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioContext.destination);
+
+    noise.start();
 };
