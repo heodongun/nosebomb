@@ -154,15 +154,13 @@ export default function NoseGame() {
 
         if (newCount >= popLimit) {
             // DIFFICULTY LOGIC
-            // 20% chance of a "Fake Sneeze" (handled by resetting without explosion) - maybe later feature
-            // Random duration between 400ms (Very Hard) and 1200ms (Easy)
-            const randomDuration = Math.max(400, Math.random() * 1200);
+            const duration = 1000; // Fixed 1 second duration
 
             // PRE-SNEEZE SUSPENSE START
             setIsSneezeBuildup(true);
             setShowSpacePrompt(true); // SHOW QTE PROMPT
-            playInhaleSound(randomDuration);
-            setSneezeDeadline(Date.now() + randomDuration);
+            playInhaleSound(duration);
+            setSneezeDeadline(Date.now() + duration);
 
             // Delay explosion
             sneezeTimeoutRef.current = setTimeout(() => {
@@ -172,7 +170,7 @@ export default function NoseGame() {
                 setShowSpacePrompt(false);
                 playExplosionSound();
                 triggerConfetti();
-            }, randomDuration);
+            }, duration);
 
         } else {
             setCurrentPlayerIndex((prev) => (prev + 1) % players.length);
